@@ -1,0 +1,6 @@
+# Python 3.13 (bpy 5.2 wheels are built for 3.13)
+bpy==5.2.2
+numpy==2.5.3
+scipy==1.18.1
+# optional, only for site/test/check.py and shot.py (headless browser screenshots)
+playwright==1.56.0

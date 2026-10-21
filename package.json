@@ -1,0 +1,9 @@
+{
+  "name": "muscle-motion-atlas",
+  "private": true,
+  "description": "Build tools: glTF compression and a local copy of three.js for offline page tests",
+  "devDependencies": {
+    "@gltf-transform/cli": "4.5.1",
+    "three": "0.169.0"
+  }
+}

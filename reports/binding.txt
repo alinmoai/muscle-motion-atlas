@@ -1,0 +1,124 @@
+arm: 64 muscles bound; in groups but not bound: []; bound but ungrouped: []
+  [arm] 肘肌             humerus > ulna
+  [arm] 肱肌             humerus > ulna
+  [arm] 肱三頭肌 外側頭       humerus > ulna
+  [arm] 肱二頭肌 長頭        scapula > humerus > radius
+  [arm] 肱三頭肌 長頭        scapula > ulna
+  [arm] 肱三頭肌 內側頭       humerus > ulna
+  [arm] 肱二頭肌 短頭        scapula > humerus > radius
+  [cuff] 棘下肌            scapula > humerus
+  [cuff] 肩胛下肌           scapula > humerus
+  [cuff] 棘上肌            scapula > humerus
+  [cuff] 小圓肌            scapula > humerus
+  [extensors] 外展拇長肌          ulna > radius > radius* > hand
+  [extensors] 肱橈肌            humerus > radius
+  [extensors] 橈側伸腕短肌         humerus > radius > radius* > hand
+  [extensors] 橈側伸腕長肌         humerus > radius > radius* > hand
+  [extensors] 伸小指肌           humerus > ulna > carpus > radius* > hand
+  [extensors] 伸指肌            humerus > carpus > radius* > hand
+  [extensors] 伸食指肌           ulna > radius > carpus > radius* > hand
+  [extensors] 伸拇短肌           ulna > radius > radius* > hand
+  [extensors] 伸拇長肌           ulna > radius > radius* > hand
+  [extensors] 尺側伸腕肌 肱骨頭      humerus > ulna > carpus
+  [extensors] 旋後肌            humerus > ulna > radius
+  [extensors] 尺側伸腕肌 尺骨頭      ulna > carpus > hand
+  [flexors] 旋前圓肌 深頭        ulna > radius
+  [flexors] 橈側屈腕肌          humerus > radius* > hand
+  [flexors] 屈指深肌           ulna > radius* > hand
+  [flexors] 屈拇長肌           radius > radius* > hand
+  [flexors] 尺側屈腕肌 肱骨頭      humerus > ulna > carpus > hand
+  [flexors] 屈指淺肌 肱尺頭       humerus > ulna > radius* > hand
+  [flexors] 掌長肌            humerus > radius* > hand
+  [flexors] 旋前方肌           ulna > radius
+  [flexors] 屈指淺肌 橈骨頭       radius > radius* > hand
+  [flexors] 旋前圓肌 淺頭        humerus > radius
+  [flexors] 尺側屈腕肌 尺骨頭      ulna > carpus
+  [girdle] 斜方肌上束          trunk > clavicle
+  [girdle] 斜方肌下束          trunk > scapula
+  [girdle] 提肩胛肌           trunk > scapula
+  [girdle] 胸小肌            trunk > scapula
+  [girdle] 大菱形肌           trunk > scapula
+  [girdle] 小菱形肌           trunk > scapula
+  [girdle] 前鋸肌            trunk > scapula
+  [girdle] 鎖骨下肌           trunk > clavicle
+  [girdle] 斜方肌中束          trunk > scapula
+  [hand] 外展小指肌          hand
+  [hand] 外展拇短肌          hand
+  [hand] 屈拇短肌 深頭        hand
+  [hand] 手背側骨間肌         hand
+  [hand] 屈小指短肌          hand
+  [hand] 手部蚓狀肌          hand
+  [hand] 內收拇肌 斜頭        hand
+  [hand] 小指對掌肌          hand
+  [hand] 拇對掌肌           hand
+  [hand] 掌側骨間肌          hand
+  [hand] 屈拇短肌 淺頭        hand
+  [hand] 內收拇肌 橫頭        hand
+  [shoulder] 胸大肌 腹部         trunk > humerus
+  [shoulder] 三角肌 中束         scapula > humerus
+  [shoulder] 胸大肌 鎖骨頭        clavicle > humerus
+  [shoulder] 三角肌 前束         clavicle > humerus
+  [shoulder] 喙肱肌            scapula > humerus
+  [shoulder] 闊背肌            trunk > scapula > humerus
+  [shoulder] 三角肌 後束         scapula > humerus
+  [shoulder] 胸大肌 胸肋頭        trunk > humerus
+  [shoulder] 大圓肌            scapula > humerus
+leg: 58 muscles bound; in groups but not bound: []; bound but ungrouped: []
+  [adductor] 內收小肌           trunk > femur
+  [adductor] 內收短肌           trunk > femur
+  [adductor] 內收長肌           trunk > femur
+  [adductor] 內收大肌           trunk > femur
+  [adductor] 股薄肌            trunk > tibia* > tibia
+  [adductor] 恥骨肌            trunk > femur
+  [calf] 跟腱（阿基里斯腱）      foot
+  [calf] 屈趾長肌           tibia > tibia* > foot* > toes
+  [calf] 屈拇長肌（足）        tibia > tibia* > foot* > toes
+  [calf] 腓腸肌 外側頭        femur > tibia* > foot
+  [calf] 腓腸肌 內側頭        femur > tibia* > foot
+  [calf] 蹠肌             femur > tibia* > tibia* > foot
+  [calf] 膕肌             femur > tibia* > tibia
+  [calf] 比目魚肌           tibia > foot
+  [calf] 脛後肌            tibia > tibia* > foot
+  [foot] 小趾對掌肌          foot
+  [foot] 外展小趾肌          foot > foot* > toes
+  [foot] 外展拇肌（足）        foot > foot* > toes
+  [foot] 足背側骨間肌         foot > foot* > toes
+  [foot] 伸趾短肌           foot > foot* > toes
+  [foot] 伸拇短肌（足）        foot > foot* > toes
+  [foot] 屈小趾短肌          foot > foot* > toes
+  [foot] 屈趾短肌           foot > foot* > toes
+  [foot] 屈拇短肌（足）外側頭     foot > foot* > toes
+  [foot] 足部蚓狀肌          foot > foot* > toes
+  [foot] 屈拇短肌（足）內側頭     foot > foot* > toes
+  [foot] 內收拇肌（足）斜頭      foot
+  [foot] 蹠側骨間肌          foot > foot* > toes
+  [foot] 蹠方肌            foot
+  [foot] 內收拇肌（足）橫頭      foot
+  [glute] 臀大肌            trunk > femur
+  [glute] 臀中肌            trunk > femur
+  [glute] 臀小肌            trunk > femur
+  [glute] 下孖肌            trunk > femur
+  [glute] 閉孔外肌           trunk > femur
+  [glute] 閉孔內肌           trunk > trunk* > femur
+  [glute] 梨狀肌            trunk > femur
+  [glute] 股方肌            trunk > femur
+  [glute] 上孖肌            trunk > femur
+  [hamstring] 股二頭肌 長頭        trunk > tibia* > tibia
+  [hamstring] 半膜肌            trunk > tibia* > tibia
+  [hamstring] 半腱肌            trunk > tibia* > tibia
+  [hamstring] 股二頭肌 短頭        femur > tibia* > tibia
+  [hipflex] 髂肌             trunk > femur
+  [hipflex] 腰大肌            trunk > femur
+  [hipflex] 股直肌            trunk > patella
+  [hipflex] 縫匠肌            trunk > tibia* > tibia
+  [hipflex] 闊筋膜張肌          trunk > femur* > tibia
+  [quad] 股中間肌           femur > patella
+  [quad] 股外側肌           femur > patella
+  [quad] 股內側肌           femur > patella
+  [shin] 伸趾長肌           tibia > toes
+  [shin] 伸拇長肌（足）        tibia > tibia* > foot* > toes
+  [shin] 腓骨短肌           tibia > tibia* > foot
+  [shin] 腓骨長肌           tibia > tibia* > foot
+  [shin] 第三腓骨肌          tibia > tibia* > foot
+  [shin] 伸趾長肌 肌腱        foot > foot* > toes
+  [shin] 脛前肌            tibia > tibia* > foot

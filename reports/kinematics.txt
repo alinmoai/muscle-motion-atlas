@@ -1,0 +1,36 @@
+sign clav_elev = +1   (landmark moved [ 4.7 -2.5 26.1] mm at +10°)
+sign scap_up   = +1   (landmark moved [-20.9 -14.4  -4.1] mm at +10°)
+sign sh_flex   = -1   (landmark moved [ -0.4 137.   57.8] mm at +30°)
+sign sh_abd    = +1   (landmark moved [-134.5   -2.    75.9] mm at +30°)
+sign el_flex   = +1   (landmark moved [  -8.5 -119.9   64. ] mm at +30°)
+sign sh_rot    = +1   (landmark moved [130.9   6.6 -21.9] mm at +30°)
+sign pron      = +1   (landmark moved [  4.8 -18.2   3.4] mm at +30°)
+sign wr_flex   = +1   (landmark moved [  7.7 -37.1  18.5] mm at +30°)
+sign wr_dev    = +1   (landmark moved [28.1  4.3  1.3] mm at +20°)
+sign hip_flex  = -1   (landmark moved [  0.  202.3  72. ] mm at +30°)
+sign hip_abd   = +1   (landmark moved [-142.3    0.    20.2] mm at +20°)
+sign hip_rot   = +1   (landmark moved [46.2 -7.6  1. ] mm at +20°)
+sign kn_flex   = -1   (landmark moved [   4.2 -193.3   48.1] mm at +30°)
+sign an_flex   = -1   (landmark moved [-17.2  -4.6  36.1] mm at +20°)
+sign toe       = -1   (landmark moved [  7.7  11.5 -30.2] mm at +30°)
+sign inv       = +1   (1st-5th MT head height diff 6.4 -> 20.2 mm)
+direction checks re-run with final signs: 13/13 pass
+patella track: slide towards knee axis 0.0 mm @0°, 8.0 mm @45°, 17.0 mm @90°, 19.0 mm @140°
+--- joint congruency (articular points of the moving bone -> partner surface) ---
+Ulna.r vs Humerus.r (el_flex, 1772 pts within 4mm):    0°: median  2.5 mm, 95%  3.9 mm |   45°: median  3.0 mm, 95%  5.8 mm |   90°: median  2.9 mm, 95%  7.5 mm |  135°: median  2.4 mm, 95%  7.4 mm
+Radius.r vs Humerus.r (el_flex, 556 pts within 6mm):    0°: median  5.4 mm, 95%  5.9 mm |   45°: median  4.1 mm, 95%  5.4 mm |   90°: median  2.3 mm, 95%  3.8 mm |  135°: median  0.8 mm, 95%  2.1 mm
+Radius.r vs Ulna.r (pron, 989 pts within 4mm):    0°: median  2.8 mm, 95%  3.9 mm |   45°: median  2.9 mm, 95%  8.1 mm |   90°: median  3.2 mm, 95%  9.7 mm |  140°: median  3.5 mm, 95%  7.3 mm
+Lunate bone.r vs Radius.r (wr_flex, 4078 pts within 6mm):  -60°: median 11.5 mm, 95% 16.3 mm |  -30°: median  7.3 mm, 95% 10.2 mm |    0°: median  5.4 mm, 95%  5.9 mm |   30°: median  4.9 mm, 95%  8.3 mm |   70°: median  8.1 mm, 95% 14.1 mm
+Humerus.r vs Scapula.r (sh_abd, 2821 pts within 6mm):    0°: median  3.1 mm, 95%  5.8 mm |   60°: median  4.7 mm, 95% 16.5 mm |  120°: median 15.3 mm, 95% 29.5 mm |  170°: median 24.1 mm, 95% 36.1 mm
+Femur.r vs Hip bone.r (hip_flex, 5084 pts within 4mm):    0°: median  2.0 mm, 95%  3.8 mm |   45°: median  2.4 mm, 95% 10.5 mm |   90°: median  3.5 mm, 95% 18.6 mm |  120°: median  4.5 mm, 95% 22.2 mm
+Tibia.r vs Femur.r (kn_flex, 690 pts within 6mm):    0°: median  4.4 mm, 95%  5.8 mm |   45°: median  5.0 mm, 95%  9.2 mm |   90°: median  6.9 mm, 95% 10.1 mm |  135°: median 11.6 mm, 95% 14.6 mm
+Patella.r vs Femur.r (kn_flex, 8911 pts within 10mm):    0°: median  6.4 mm, 95%  9.5 mm |   45°: median  7.3 mm, 95% 11.6 mm |   90°: median  6.2 mm, 95%  9.8 mm |  135°: median  7.0 mm, 95% 12.6 mm
+Talus.r vs Tibia.r (an_flex, 5883 pts within 4mm):  -20°: median  3.1 mm, 95%  7.0 mm |    0°: median  2.8 mm, 95%  3.9 mm |   25°: median  3.0 mm, 95%  7.2 mm |   50°: median  3.9 mm, 95% 13.0 mm
+Calcaneus.r vs Talus.r (inv, 6132 pts within 4mm):  -15°: median  1.4 mm, 95%  5.8 mm |    0°: median  1.1 mm, 95%  3.7 mm |   15°: median  0.8 mm, 95%  4.7 mm |   30°: median  1.5 mm, 95%  6.6 mm
+--- collision counts (sample points closer than 1 mm) ---
+collision pts Humerus.r vs Scapula.r (sh_abd): 0°:2 60°:0 90°:0 120°:0 150°:0 180°:284
+collision pts Humerus.r vs Scapula.r (sh_flex): 0°:2 60°:0 90°:0 120°:0 150°:0 180°:0
+collision pts Scapula.r vs Second rib.r (sh_abd): 0°:0 90°:0 180°:0
+collision pts Ulna.r vs Humerus.r (el_flex): 0°:187 90°:176 145°:661
+collision pts Tibia.r vs Femur.r (kn_flex): 0°:22 45°:0 90°:137 140°:102
+collision pts Femur.r vs Hip bone.r (hip_flex): 0°:731 60°:608 90°:591 120°:855
