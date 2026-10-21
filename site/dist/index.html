@@ -557,7 +557,7 @@ async function enterRegion(r) {
   overview.parts.arm.material = r === 'arm' ? hotMat.arm : ctxMat;
   overview.parts.leg.material = r === 'leg' ? hotMat.leg : ctxMat;
   state.ang = Object.fromEntries(model.rig.regions[r].dofs.map((d) => [d.id, 0]));
-  state.selected = null; state.picked = null; state.group = 'all';
+  state.selected = null; state.picked = null; state.group = 'all'; state.lastPreset = null;
   buildRegionUI(r);
   $('#home').hidden = true; $('#region').hidden = false; $('#back').hidden = false; $('#legend').hidden = false;
   document.body.classList.add('in-region');
@@ -783,17 +783,20 @@ function stopPlay() {
   state.play = null;
   $('#play').setAttribute('aria-pressed', 'false'); $('#play').textContent = '來回播放';
 }
-function startPlay() {
-  const r = state.region;
-  const idx = state.lastPreset ?? 0;
-  const target = PRESETS[r][idx][1];
-  markPreset(idx);
-  state.play = { target, toward: 'target' };
+const atPose = (target) => Object.keys(state.ang).every((k) => Math.abs((target[k] ?? 0) - state.ang[k]) < 0.5);
+// Ping-pong between a preset and the anatomical position.
+// Each run is its own object: a step queued by an earlier run sees it is no longer current and stops.
+function startPlay(idx = state.lastPreset ?? 0) {
+  const target = PRESETS[state.region][idx][1];
+  state.lastPreset = idx; markPreset(idx);
+  // already standing in the preset pose: start by going back, otherwise the first leg would not move
+  const run = { target, toward: atPose(target) ? 'rest' : 'target' };
+  state.play = run;
   $('#play').setAttribute('aria-pressed', 'true'); $('#play').textContent = '停止播放';
   const step = () => {
-    if (!state.play) return;
-    const go = state.play.toward === 'target' ? state.play.target : {};
-    state.play.toward = state.play.toward === 'target' ? 'rest' : 'target';
+    if (state.play !== run) return;
+    const go = run.toward === 'target' ? run.target : {};
+    run.toward = run.toward === 'target' ? 'rest' : 'target';
     tweenTo(go, 1500, () => setTimeout(step, 250));
   };
   step();
@@ -863,7 +866,8 @@ $('#tab-about').addEventListener('click', () => selectTab('about'));
 $('#presets').addEventListener('click', (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
   const i = Number(b.dataset.p);
-  stopPlay(); state.lastPreset = i; markPreset(i);
+  if (state.play) { startPlay(i); return; }      // keep playing, now with the chosen movement
+  state.lastPreset = i; markPreset(i);
   tweenTo(PRESETS[state.region][i][1]);
 });
 $('#play').addEventListener('click', () => (state.play ? stopPlay() : startPlay()));

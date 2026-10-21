@@ -50,6 +50,7 @@ npm install
 - `reports/binding.txt`：每條肌肉的附著骨頭和長度路徑
 - `node site/src/test_kin.mjs`：50 個隨機姿勢下，網頁的計算和 Python 的計算完全一致
 - `python3 site/test/check.py`：在手機和桌面尺寸實際操作網頁、截圖（需要 playwright）
+- `python3 site/test/playback.py`：來回播放的回歸測試（在動作姿勢上按播放要立刻動；播放中切換動作要繼續播放）
 
 ## 常見修改
 
