@@ -2,7 +2,7 @@
 
 右側手臂（含肩胛骨）和右腳（到腳掌）的 3D 骨骼肌肉模型。轉動關節時，每條肌肉依長度變化即時上色：紅色是縮短，藍色是被拉長。
 
-網頁（Claude Artifact，私人）：https://claude.ai/artifact/2tsDDLskCDpZzZhZkuGmQE
+網頁（Claude Artifact）：https://claude.ai/artifact/2tsDDLskCDpZzZhZkuGmQE
 
 - 首頁是全身骨架（約 1 MB），點手臂或腿才下載那一區的肌肉（約 2.5 MB）
 - 手臂 7 個角度、64 條肌肉；腿 7 個角度、58 條肌肉
