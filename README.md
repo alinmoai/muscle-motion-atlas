@@ -2,7 +2,7 @@
 
 右側手臂（含肩胛骨）和右腳（到腳掌）的 3D 骨骼肌肉模型。轉動關節時，每條肌肉依長度變化即時上色：紅色是縮短，藍色是被拉長。
 
-網頁（Claude Artifact）：https://claude.ai/artifact/2tsDDLskCDpZzZhZkuGmQE
+網頁：https://alinmoai.github.io/muscle-motion-atlas/
 
 - 首頁是全身骨架（約 1 MB），點手臂或腿才下載那一區的肌肉（約 2.5 MB）
 - 手臂 7 個角度、64 條肌肉；腿 7 個角度、58 條肌肉
@@ -14,10 +14,10 @@
 |---|---|---|
 | `pipeline/` | 從原始模型算出關節、綁肌肉、驗證、匯出的 Python 程式 | ✓ |
 | `site/src/` | 網頁原始碼（`index.html`、`kin.js` 關節與肌肉長度計算） | ✓ |
-| `site/dist/` | 建好、可直接放上任何靜態主機的網頁和模型 | ✓ |
+| `site/dist/` | 建好的網頁和模型，GitHub Pages 發布的就是這個資料夾 | ✓ |
 | `site/test/` | 無頭瀏覽器測試與截圖 | ✓ |
 | `reports/` | 每次重建的驗證結果 | ✓ |
-| `build/` | 下載的原始模型、中間資料、Artifact 發布用檔案 | ✗（可重建） |
+| `build/` | 下載的原始模型、中間資料、Claude Artifact 版本 | ✗（可重建） |
 
 ## 從頭重建
 
@@ -62,9 +62,11 @@ npm install
 
 ## 部署
 
-**現在：Claude Artifact。** 發布的是 `build/artifact/` 裡的 `index.html`、`model.json` 和 `*.b64.txt`。Artifact 不接受 `.glb`，所以模型轉成 base64 文字，在網頁裡解回來。在 Claude 對話裡給它上面的連結，請它重新發布即可。
+**GitHub Pages。** 每次 push 到 `main`，`.github/workflows/pages.yml` 會把 `site/dist/` 發布到上面的網址。網頁沒有伺服器端，所有計算在瀏覽器裡做，three.js 從 jsDelivr 載入。
 
-**之後可選：GitHub Pages。** `site/dist/` 已經是能直接放上去的靜態網站（直接讀 `.glb`）。注意免費方案只能從公開 repo 發布，而且 Pages 網站本身一律公開。
+改了 `site/src/` 或重跑過 pipeline 之後，跑 `python3 site/build.py` 更新 `site/dist/`，一起 commit 再 push。
+
+**Claude Artifact（可選）。** `build/artifact/` 是同一個網頁的 Artifact 版本：Artifact 不接受 `.glb`，所以模型轉成 base64 文字（`*.b64.txt`），在網頁裡解回來。想在 Claude 裡發布時用這個資料夾。
 
 模型有兩個版本：`*.glb` 用 meshopt 壓縮，需要瀏覽器支援 WebAssembly；`*.plain.glb` 較大，WebAssembly 被擋時自動改用。
 
@@ -84,4 +86,5 @@ npm install
 
 ## 來源與授權
 
-骨骼和肌肉模型來自 [Z-Anatomy](https://github.com/LluisV/Z-Anatomy)（衍生自 BodyParts3D），授權 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)。`site/dist/` 和 `build/` 裡的模型是改作，對外分享時須沿用同一授權並標示出處。
+- **程式碼**（`pipeline/`、`site/src/`、`site/build.py`、`site/test/`、`run_all.sh`）：[MIT](LICENSE)，可自由使用、修改、商用，保留授權聲明即可。
+- **模型與由模型算出的資料**（`site/dist/` 裡的 `.glb` 和 `model.json`，以及 `build/`）：改作自 [Z-Anatomy](https://github.com/LluisV/Z-Anatomy)（衍生自 BodyParts3D），授權 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)。再散布時須標示出處，改作也須沿用同一授權。詳見 [LICENSE-models.md](LICENSE-models.md)。

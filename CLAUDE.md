@@ -23,6 +23,9 @@
 - `pipeline/kin.py`（Python，驗證用）和 `site/src/kin.js`（網頁用）是同一套正向運動學和肌肉長度計算，要一起改。
 
 ## 發布
-- Artifact 連結：https://claude.ai/artifact/2tsDDLskCDpZzZhZkuGmQE
-- 發布 `build/artifact/index.html`，附檔 `model.json`、`overview.b64.txt`、`region_arm.b64.txt`、`region_leg.b64.txt` 和三個 `*.plain.b64.txt`（Artifact 不收 `.glb`）。
-- 從新的對話更新時，先 read 這個連結，再帶 `url` 發布。
+- 網頁在 GitHub Pages：https://alinmoai.github.io/muscle-motion-atlas/ 。push 到 `main` 後由 `.github/workflows/pages.yml` 發布 `site/dist/`。
+- `site/dist/` 有進 git。改了 `site/src/` 或重跑 pipeline 後，跑 `python3 site/build.py`，把 `site/dist/` 一起 commit。
+- `build/artifact/` 是 Claude Artifact 版本（模型轉成 base64，因為 Artifact 不收 `.glb`），只在使用者要求時發布。
+
+## 授權
+- 程式碼 MIT；模型和由模型算出的資料（`.glb`、`model.json`）是 Z-Anatomy 的改作，CC BY-SA 4.0。網頁「說明」分頁裡的出處聲明不要拿掉。
