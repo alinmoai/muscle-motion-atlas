@@ -73,7 +73,17 @@ VIA = {
             dict(name='mtp', seg='foot', center=J['mtp']['center'], normal=J['subtalar']['foot_long'],
                  prox={'trunk', 'femur', 'tibia', 'talus', 'foot'}, dist={'toes'}, skip=set())],
 }
+def _iliopsoas_pulley(name):
+    # The iliopsoas turns over the pelvic brim at the iliopubic eminence, about 35 mm in front of the hip
+    # centre, which keeps it a hip flexor through the whole range. A straight origin-insertion line passes
+    # behind the hip centre near full extension and would make hip extension shorten it.
+    v = Mu[name].get('v').astype(np.float64)
+    z = np.array(J['hip']['center'])[2] + 0.010
+    return [('trunk', v[np.abs(v[:, 2] - z) < 0.005].mean(0), 'via:iliopubic eminence')]
+
 EXTRA_VIA = {   # (segment, point) inserted just before the distal end
+    'Psoas major': lambda: _iliopsoas_pulley('Psoas major.r'),
+    'Iliacus muscle': lambda: _iliopsoas_pulley('Iliacus muscle.r'),
     'Obturator internus': lambda: [('trunk', Mu['Sciatic bursa of obturator internus.r']['v'].astype(np.float64).mean(0), 'via:lesser sciatic notch')],
     'Tensor fasciae latae': lambda: [('femur', (lambda v: v[v[:, 2] < v[:, 2].min() + 0.02].mean(0))(Mu['Tensor fasciae latae.r']['v'].astype(np.float64)), 'via:iliotibial tract over greater trochanter')],
 }

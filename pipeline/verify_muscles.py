@@ -43,6 +43,23 @@ TESTS = {
   ('腳趾伸 40°', {'toe': 40}, ['伸趾短肌', '伸趾長肌', '伸拇長肌（足）'], ['屈趾長肌', '屈拇長肌（足）', '屈趾短肌', '足背側骨間肌', '蹠側骨間肌', '足部蚓狀肌']),
  ],
 }
+# Walking: when in the gait cycle each muscle's path is longest / shortest (textbook timing).
+# (muscle, 'max' or 'min', window start %, window end %, reason). Windows may run past 100 % (wrap to 0).
+GAIT_TESTS = [
+  ('半腱肌', 'max', 80, 102, '擺盪末期髖屈曲、膝接近伸直，膕旁肌被拉到最長'),
+  ('半膜肌', 'max', 80, 102, '同上'),
+  ('股二頭肌 長頭', 'max', 80, 102, '同上'),
+  ('臀大肌', 'max', 80, 102, '擺盪中期末到腳跟著地，髖屈曲最大'),
+  ('髂肌', 'max', 40, 60, '站立末期髖伸展最大'),
+  ('腰大肌', 'max', 40, 60, '同上'),
+  ('比目魚肌', 'max', 35, 55, '站立末期踝背屈最大'),
+  ('比目魚肌', 'min', 55, 70, '離地前後踝蹠屈最大'),
+  ('脛前肌', 'max', 55, 70, '離地前後踝蹠屈最大'),
+  ('股外側肌', 'max', 65, 80, '擺盪初期末膝屈曲最大'),
+  ('股內側肌', 'max', 65, 80, '同上'),
+  ('股中間肌', 'max', 65, 80, '同上'),
+]
+
 TH = 0.01
 total = fails = 0
 lines = []
@@ -67,6 +84,21 @@ for region, tests in TESTS.items():
         top_s = ', '.join(f'{m} {(r-1)*100:+.0f}%' for r, m in ch[:5] if r < 0.99)
         top_l = ', '.join(f'{m} {(r-1)*100:+.0f}%' for r, m in ch[::-1][:5] if r > 1.01)
         lines.append(f'{"PASS" if not bad else "FAIL"} {title}\n   縮最多: {top_s}\n   拉最多: {top_l}' + ('\n   !! ' + '; '.join(bad) if bad else ''))
+# ---- walking ----
+from gait import gait_table, poses
+meta = json.load(open(f'{W}/bind_leg.json'))
+table = gait_table(rig)
+curve = [lengths('leg', meta, a) for a in poses(table)]
+bad = []
+for m, kind, lo, hi, why in GAIT_TESTS:
+    total += 1
+    v = np.array([c[m] for c in curve])
+    k = int(v.argmax() if kind == 'max' else v.argmin())
+    ok = (k - lo) % 100 <= hi - lo
+    word = '最長' if kind == 'max' else '最短'
+    bad += [] if ok else [m]
+    lines.append(f'{"PASS" if ok else "FAIL"} 走路 {m}{word}在 {k}%（預期 {lo}–{hi % 100 if hi > 100 else hi}%：{why}）')
+fails += len(bad)
 print('\n'.join(lines))
 print(f'\n{total - fails}/{total} expectations met')
 open(f'{W}/muscle_report.txt', 'w').write('\n'.join(lines) + f'\n\n{total - fails}/{total} expectations met\n')

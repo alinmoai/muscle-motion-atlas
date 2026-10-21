@@ -107,8 +107,8 @@ leg: 58 muscles bound; in groups but not bound: []; bound but ungrouped: []
   [hamstring] 半膜肌            trunk > tibia* > tibia
   [hamstring] 半腱肌            trunk > tibia* > tibia
   [hamstring] 股二頭肌 短頭        femur > tibia* > tibia
-  [hipflex] 髂肌             trunk > femur
-  [hipflex] 腰大肌            trunk > femur
+  [hipflex] 髂肌             trunk > trunk* > femur
+  [hipflex] 腰大肌            trunk > trunk* > femur
   [hipflex] 股直肌            trunk > patella
   [hipflex] 縫匠肌            trunk > tibia* > tibia
   [hipflex] 闊筋膜張肌          trunk > femur* > tibia

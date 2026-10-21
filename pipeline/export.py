@@ -74,11 +74,17 @@ for r in ['arm', 'leg']:
                ('hand', cen('Distal phalanx of first finger of hand.r'))]
     else:
         heel = B['Calcaneus.r']['v'].astype(np.float64); heel = heel[np.argmax(heel[:, 1])].tolist()
+        hipbone = B['Hip bone.r']['v'].astype(np.float64)
+        crest = hipbone[np.argmax(hipbone[:, 2])].tolist()      # iliac crest: the gluteal and iliacus muscles reach up to it
         lms = [('femur', Jr['femur']['pivot']), ('tibia', Jr['tibia']['pivot']), ('talus', Jr['talus']['pivot']),
-               ('foot', heel), ('toes', cen('Distal phalanx of second finger of foot.r')), ('trunk', cen('Hip bone.r'))]
+               ('foot', heel), ('toes', cen('Distal phalanx of second finger of foot.r')), ('trunk', cen('Hip bone.r')),
+               ('trunk', crest)]
     landmarks = [dict(seg=sg, p=[round(float(x), 5) for x in pt]) for sg, pt in lms]
     model['regions'][r] = dict(segments=segs, bones=bones_meta, muscles=mus_meta, groups=groups, landmarks=landmarks)
     print('region', r, 'tris', tris, 'muscles', len(mus_meta))
+
+from gait import gait_table
+model['regions']['leg']['gait'] = gait_table(rig)
 
 model['source'] = dict(
     model='Z-Anatomy (github.com/LluisV/Z-Anatomy), based on BodyParts3D (DBCLS)',

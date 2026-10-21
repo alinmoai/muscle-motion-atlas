@@ -104,6 +104,14 @@ h1 .zh-t { font-family: var(--f-body); font-weight: 700; letter-spacing: .02em; 
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .btn { border: 1px solid var(--line); background: var(--surface-2); border-radius: 8px; padding: 6px 12px; font-size: 13px; }
 .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.gait { display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--r); background: var(--bg); }
+.gait-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.gait-head b { font-size: 15px; }
+.gait-head output { font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--accent); }
+.gait-bar { display: flex; height: 18px; border-radius: 4px; overflow: hidden; font-size: 11px; color: var(--muted); }
+.gait-bar span { display: flex; align-items: center; padding: 0 6px; background: var(--surface-2); min-width: 0; white-space: nowrap; }
+.gait-bar span + span { background: transparent; box-shadow: inset 0 0 0 1px var(--surface-2); }
+.gait-note { margin: 0; font-size: 12.5px; color: var(--muted); }
 
 .dofs { display: grid; gap: 14px; }
 .dof { display: grid; gap: 2px; }
@@ -174,6 +182,12 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 26px; ma
         <div>
           <p class="sect-title">動作範例</p>
           <div class="presets" id="presets"></div>
+        </div>
+        <div class="gait" id="gait" hidden>
+          <div class="gait-head"><b id="gait-phase">初始著地</b><output id="gait-pct">0%</output></div>
+          <input type="range" id="gait-scrub" min="0" max="99.5" step="0.5" value="0" aria-label="步態週期位置（%）">
+          <div class="gait-bar" aria-hidden="true"><span style="flex: 60">站立期 0–60%</span><span style="flex: 40">擺盪期 60–100%</span></div>
+          <p class="gait-note" id="gait-note"></p>
         </div>
         <div class="row">
           <button class="btn primary" id="play" aria-pressed="false">來回播放</button>
@@ -344,6 +358,16 @@ function measurable(m) {
   return m.kind === 'muscle' && new Set(m.anchors.map((a) => a.seg)).size >= 2;
 }
 
+// joint angles at a point of the gait cycle (phase 0..1), linear between the 1 % samples, wrapping at 100 %
+function gaitAngles(gait, phase) {
+  const n = gait.n;
+  const x = (((phase % 1) + 1) % 1) * n;
+  const i = Math.floor(x) % n, j = (i + 1) % n, f = x - Math.floor(x);
+  const out = {};
+  for (const [k, v] of Object.entries(gait.samples)) out[k] = v[i] + (v[j] - v[i]) * f;
+  return out;
+}
+
 
 const $ = (s) => document.querySelector(s);
 const SEG_ZH = {
@@ -351,7 +375,7 @@ const SEG_ZH = {
   femur: '股骨', patella: '髕骨', tibia: '脛骨／腓骨', talus: '距骨', foot: '足部', toes: '腳趾',
 };
 const VIA_ZH = { 'via:wrist': '腕部', 'via:knee': '膝後', 'via:knee (pes anserinus, shared)': '膝後內側', 'via:ankle': '踝部',
-  'via:lateral malleolus': '外踝後方', 'via:mtp': '蹠骨頭', 'via:mtp (plantar to the metatarsal heads)': '蹠骨頭下方', 'via:lesser sciatic notch': '坐骨小切跡', 'via:iliotibial tract over greater trochanter': '大轉子外側' };
+  'via:lateral malleolus': '外踝後方', 'via:mtp': '蹠骨頭', 'via:mtp (plantar to the metatarsal heads)': '蹠骨頭下方', 'via:lesser sciatic notch': '坐骨小切跡', 'via:iliopubic eminence': '骨盆前緣（髂恥隆起）', 'via:iliotibial tract over greater trochanter': '大轉子外側' };
 const VIEWS = {
   overview: { c: [0, 0.03, 0.9], r: 0.98, d: [-0.32, -1, 0.12] },
   arm: { c: [-0.21, 0.02, 1.1], r: 0.46, d: [-0.8, -1, 0.22] },
@@ -364,6 +388,7 @@ const PRESETS = {
     ['投球預備', { sh_abd: 90, sh_rot: -55, el_flex: 90 }], ['手放背後', { sh_flex: -40, sh_rot: 60, el_flex: 90 }],
   ],
   leg: [
+    ['走路', 'gait'],
     ['抬膝', { hip_flex: 90, kn_flex: 90 }], ['深蹲', { hip_flex: 100, kn_flex: 115, an_flex: -20 }],
     ['踮腳', { an_flex: 40, toe: 45 }], ['勾腳', { an_flex: -20, toe: 30 }], ['側抬腿', { hip_abd: 40 }],
     ['往後勾腿', { hip_flex: -15, kn_flex: 100 }], ['腳踝內翻', { inv: 25, an_flex: 20 }], ['盤腿方向', { hip_flex: 60, hip_abd: 35, hip_rot: -40, kn_flex: 90 }],
@@ -428,7 +453,7 @@ function viewFor(name) {
 }
 let camTween = null;
 // keep the moving limb in frame: the target follows the limb's landmarks, distance fits their spread
-const follow = { on: false, target: new THREE.Vector3(), dist: 1, zoom: 1, user: false };
+const follow = { on: false, target: new THREE.Vector3(), dist: 1, zoom: 1, user: false, lock: false };
 function fitDist(radius) {
   const vf = (camera.fov * Math.PI) / 360, hf = Math.atan(Math.tan(vf) * camera.aspect);
   return radius / Math.sin(Math.min(vf, hf));
@@ -454,7 +479,7 @@ function flyTo(name) {
 }
 
 // ---------- state ----------
-const state = { region: null, ang: {}, L0: {}, L: {}, strain: {}, selected: null, picked: null, group: 'all', onlyChanged: false, ghost: false, hideMuscles: false, hover: null, play: null, tween: null };
+const state = { region: null, ang: {}, L0: {}, L: {}, strain: {}, selected: null, picked: null, group: 'all', onlyChanged: false, ghost: false, hideMuscles: false, hover: null, play: null, tween: null, gaitPhase: 0 };
 let model, overview, R;
 const regionCache = {};
 const loader = new GLTFLoader();
@@ -565,7 +590,7 @@ async function enterRegion(r) {
   $('#title').innerHTML = `<span class="zh-t">${r === 'arm' ? '手臂與肩胛骨' : '單腳到腳掌'}</span>`;
   $('#lede').textContent = '拖動角度或點動作範例。紅色的肌肉起止點在靠近（縮短），藍色的在拉開（拉長）。點肌肉看名稱。';
   paintStatic();
-  follow.zoom = 1; follow.on = false;
+  follow.zoom = 1; follow.on = false; follow.lock = false; state.gaitPhase = 0;
   updatePose();
   const v0 = VIEWS[r];
   VIEWS[r] = { ...v0, c: follow.target.toArray(), r: Math.max(v0.r, follow.dist * Math.sin(Math.min((camera.fov * Math.PI) / 360, Math.atan(Math.tan((camera.fov * Math.PI) / 360) * camera.aspect)))) };
@@ -576,7 +601,7 @@ async function enterRegion(r) {
 
 function leaveRegion() {
   stopPlay();
-  follow.on = false;
+  follow.on = false; follow.lock = false;
   state.region = null; R = null; state.selected = null; state.picked = null;
   for (const k of Object.keys(regionCache)) regionCache[k].root.visible = false;
   overview.parts.arm.visible = overview.parts.leg.visible = true;
@@ -604,7 +629,7 @@ function updatePose() {
     const L = muscleLength(R.muscles[n].meta, M, state.ang);
     state.L[n] = L; state.strain[n] = L / R.L0[n] - 1;
   }
-  updateFollow(M);
+  if (!follow.lock) updateFollow(M);
   paintMuscles();
   scheduleUI();
   requestRender();
@@ -743,6 +768,11 @@ function buildRegionUI(r) {
   $('#groups').innerHTML = `<button class="chip" data-g="all" aria-pressed="true">全部</button>` +
     model.regions[r].groups.map((g) => `<button class="chip" data-g="${g.id}" aria-pressed="false">${esc(g.label)}</button>`).join('');
   $('#about').innerHTML = aboutHTML(r);
+  $('#gait').hidden = true;
+  if (r === 'leg') {
+    const [lo, hi] = model.regions.leg.gait.real_cycle_s;
+    $('#gait-note').textContent = `慢動作：一個步態週期播 ${GAIT_PERIOD / 1000} 秒（正常走路約 ${lo}–${hi} 秒）。只有前後方向的動作，骨盆固定。拖曳上面的條可以停在任一時刻。`;
+  }
   selectTab('move');
 }
 
@@ -755,7 +785,8 @@ function aboutHTML(r) {
     <div><h3>變短不一定是在出力</h3><p>這裡顯示的是幾何上的長度變化。實際是誰在出力，還要看動作方向和重力。例如手臂慢慢放下時，三角肌在變長，但它正在出力控制下降速度（離心收縮）。</p></div>
     <div><h3>長度怎麼量</h3><p>沿著肌肉的附著點連線量，遇到肌腱繞過關節的地方會加一個滑車點（例如內外踝後方、膝蓋後方、腕部），所以量到的是肌肉加肌腱的路徑長，不是變形後的網格長度。肱二頭肌的肌腱在旋前時會繞著橈骨捲，這部分另外加上。</p></div>
     <div><h3>簡化之處</h3><p>${sim} 骨頭的形狀和肌肉位置來自模型，但動作是用固定的關節軸近似，極端角度時骨頭可能有幾毫米的重疊或間隙。</p></div>
-    <div><h3>怎麼驗證過</h3><p>每個關節動作都對照了教科書的主動肌與拮抗肌，例如屈肘 90° 時，肱肌縮短 25%、肱三頭肌內側頭拉長 19%。兩個部位共 113 項預期全部符合。骨頭的轉動方向也是用量測確認，不是看圖判斷。</p></div>
+    ${r === 'leg' ? `<div><h3>走路</h3><p>走路的關節角度是健康成人正常速度的典型曲線：依步態講義的各期數值（腳跟著地時髖屈曲 30°、膝 5°；擺盪初期末膝屈曲約 60°；站立末期踝背屈、離地前蹠屈約 20°），用不會過衝的方式平滑連接。只做前後方向的動作，骨盆固定，所以看起來像懸空擺腿。</p><p>走路特別要記得長度不等於出力：腳跟著地後，脛前肌正在出力讓腳掌慢慢放下，但它同時被拉長，所以是藍色；站立中期的比目魚肌也是一邊出力、一邊被拉長。</p></div>` : ''}
+    <div><h3>怎麼驗證過</h3><p>每個關節動作都對照了教科書的主動肌與拮抗肌，例如屈肘 90° 時，肱肌縮短 25%、肱三頭肌內側頭拉長 19%。走路則檢查每條主要肌肉在週期的哪個時間點最長，例如膕旁肌在擺盪末期、髂腰肌在站立末期。兩個部位共 125 項預期全部符合。骨頭的轉動方向也是用量測確認，不是看圖判斷。</p></div>
     <div><h3>原模型的錯誤</h3><p>原模型把斜方肌上束和下束的名稱標反了（標「上行部」的那塊其實在脖子上），這裡依位置改正。另外有些肌肉的附著點沒有標，或者標在它只是貼著、並沒有附著的骨頭上，例如股直肌被標到股骨上，這些都依解剖學調整過。</p></div>
     <div><p class="muted">模型：<a href="https://github.com/LluisV/Z-Anatomy" target="_blank" rel="noopener">Z-Anatomy</a>（衍生自 BodyParts3D），授權 CC BY-SA 4.0。只有右側肢體可以動。</p></div>`;
 }
@@ -769,6 +800,9 @@ function selectTab(id) {
 }
 function markPreset(i) {
   document.querySelectorAll('#presets .chip').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.p) === i)));
+  const g = isGait(i);
+  $('#gait').hidden = !g;
+  if (!g) follow.lock = false;
 }
 
 // ---------- motion ----------
@@ -784,9 +818,56 @@ function stopPlay() {
   $('#play').setAttribute('aria-pressed', 'false'); $('#play').textContent = '來回播放';
 }
 const atPose = (target) => Object.keys(state.ang).every((k) => Math.abs((target[k] ?? 0) - state.ang[k]) < 0.5);
+// ---- walking: loop through the gait cycle (model.regions.leg.gait) ----
+const GAIT_PERIOD = 4000;   // ms per cycle, slow motion
+const isGait = (i) => i != null && PRESETS[state.region]?.[i]?.[1] === 'gait';
+function gaitPose(phase) {
+  return { ...Object.fromEntries(Object.keys(state.ang).map((k) => [k, 0])), ...gaitAngles(model.regions.leg.gait, phase) };
+}
+function setGaitPhase(phase) {
+  state.gaitPhase = ((phase % 1) + 1) % 1;
+  state.ang = gaitPose(state.gaitPhase);
+  updatePose();
+  renderGait();
+}
+function renderGait() {
+  const g = model.regions.leg.gait, pct = state.gaitPhase * 100;
+  const ph = g.phases.find((p) => pct >= p.start && pct < p.end) ?? g.phases[g.phases.length - 1];
+  $('#gait-phase').textContent = `${ph.zh}（${pct < g.stance_pct ? '站立期' : '擺盪期'}）`;
+  $('#gait-pct').textContent = `${Math.floor(pct)}%`;
+  $('#gait-scrub').value = pct.toFixed(1);
+}
+// frame every pose of the cycle once, seen from the side, and hold the camera there while walking
+function frameGait() {
+  const g = model.regions.leg.gait, pts = [];
+  for (let i = 0; i < g.n; i += 5) {
+    const M = fk(model.rig, 'leg', gaitPose(i / g.n));
+    for (const l of model.regions.leg.landmarks) pts.push(apply(M[l.seg], l.p));
+  }
+  const lo = [0, 1, 2].map((k) => Math.min(...pts.map((p) => p[k]))), hi = [0, 1, 2].map((k) => Math.max(...pts.map((p) => p[k])));
+  const c = lo.map((v, k) => (v + hi[k]) / 2);
+  const r = Math.max(...pts.map((p) => Math.hypot(p[0] - c[0], p[1] - c[1], p[2] - c[2]))) + 0.1;
+  follow.target.set(c[0], c[1], c[2]); follow.dist = fitDist(r); follow.zoom = 1; follow.on = true; follow.lock = true;
+  VIEWS.gait = { c, r, d: [-1, -0.12, 0.1] };
+  flyTo('gait');
+}
+function startGait(fromPhase, fly) {
+  const idx = PRESETS[state.region].findIndex((p) => p[1] === 'gait');
+  state.lastPreset = idx; markPreset(idx);
+  if (fly) frameGait(); else follow.lock = true;
+  const run = { gait: true, ready: false, phase0: fromPhase };
+  state.play = run;
+  $('#play').setAttribute('aria-pressed', 'true'); $('#play').textContent = '停止播放';
+  state.gaitPhase = fromPhase; renderGait();
+  const go = () => { if (state.play !== run) return; run.t0 = performance.now(); run.ready = true; };
+  const start = gaitPose(fromPhase);
+  if (atPose(start)) { state.tween = null; go(); } else tweenTo(start, 700, go);
+}
+
 // Ping-pong between a preset and the anatomical position.
 // Each run is its own object: a step queued by an earlier run sees it is no longer current and stops.
 function startPlay(idx = state.lastPreset ?? 0) {
+  if (isGait(idx)) { startGait(state.gaitPhase ?? 0, false); return; }
   const target = PRESETS[state.region][idx][1];
   state.lastPreset = idx; markPreset(idx);
   // already standing in the preset pose: start by going back, otherwise the first leg would not move
@@ -866,11 +947,13 @@ $('#tab-about').addEventListener('click', () => selectTab('about'));
 $('#presets').addEventListener('click', (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
   const i = Number(b.dataset.p);
+  if (isGait(i)) { startGait(0, true); return; }   // walking always plays, from heel strike
   if (state.play) { startPlay(i); return; }      // keep playing, now with the chosen movement
   state.lastPreset = i; markPreset(i);
   tweenTo(PRESETS[state.region][i][1]);
 });
 $('#play').addEventListener('click', () => (state.play ? stopPlay() : startPlay()));
+$('#gait-scrub').addEventListener('input', (e) => { stopPlay(); state.tween = null; setGaitPhase(Number(e.target.value) / 100); });
 $('#reset').addEventListener('click', () => { stopPlay(); markPreset(null); tweenTo({}); });
 $('#groups').addEventListener('click', (e) => {
   const b = e.target.closest('.chip'); if (!b) return;
@@ -907,6 +990,9 @@ renderer.setAnimationLoop((now) => {
     for (const id of Object.keys(tw.to)) state.ang[id] = tw.from[id] + (tw.to[id] - tw.from[id]) * k;
     updatePose();
     if (t >= 1) { state.tween = null; tw.onDone && tw.onDone(); }
+  }
+  if (state.play && state.play.gait && state.play.ready && !state.tween) {
+    setGaitPhase(state.play.phase0 + (now - state.play.t0) / GAIT_PERIOD);
   }
   if (follow.on && state.region && !camTween && !follow.user) {
     const off = camera.position.clone().sub(controls.target);

@@ -13,7 +13,8 @@
 ## 方向和長度用量的
 - 每個角度的正負號由 `verify_kinematics.py` 量地標位移決定，不要手動改 `signs`，也不要用截圖判斷方向。
 - 改了關節或綁定，跑完要確認 `reports/muscles.txt` 是 N/N，`node site/src/test_kin.mjs` 差值為 0。
-- 新增動作或部位時，先在 `verify_muscles.py` 的 `TESTS` 寫下教科書預期，再改程式。
+- 新增動作或部位時，先在 `verify_muscles.py` 的 `TESTS`（走路是 `GAIT_TESTS`）寫下教科書預期，再改程式。
+- 走路的角度曲線在 `pipeline/gait.py`，用 PCHIP 內插（不會甩過關鍵點）；不要換回三次樣條，它曾讓踝背屈多衝出 7°。
 
 ## 所有修正都要寫進程式
 - 不要直接改 `build/` 裡的中間檔。之前有兩個修正是直接改中間 JSON，結果從頭重跑就壞了。

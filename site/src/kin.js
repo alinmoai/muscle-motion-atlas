@@ -130,3 +130,13 @@ export function muscleLength(m, M, ang) {
 export function measurable(m) {
   return m.kind === 'muscle' && new Set(m.anchors.map((a) => a.seg)).size >= 2;
 }
+
+// joint angles at a point of the gait cycle (phase 0..1), linear between the 1 % samples, wrapping at 100 %
+export function gaitAngles(gait, phase) {
+  const n = gait.n;
+  const x = (((phase % 1) + 1) % 1) * n;
+  const i = Math.floor(x) % n, j = (i + 1) % n, f = x - Math.floor(x);
+  const out = {};
+  for (const [k, v] of Object.entries(gait.samples)) out[k] = v[i] + (v[j] - v[i]) * f;
+  return out;
+}

@@ -6,6 +6,7 @@
 
 - 首頁是全身骨架（約 1 MB），點手臂或腿才下載那一區的肌肉（約 2.5 MB）
 - 手臂 7 個角度、64 條肌肉；腿 7 個角度、58 條肌肉
+- 腿有「走路」：循環播放一個步態週期，可拖曳停在任一時刻，顯示目前是哪一期
 - 每條肌肉的長度沿「附著點 + 繞過關節的滑車點」量，不是量變形後的網格
 
 ## 資料夾
@@ -46,7 +47,7 @@ npm install
 ## 驗證
 
 - `reports/kinematics.txt`：每個角度的正負方向是量測地標的位移決定的；關節面間距和穿透點數
-- `reports/muscles.txt`：14 個動作、113 項「這條肌肉應該縮短／拉長」的預期
+- `reports/muscles.txt`：14 個動作共 113 項「這條肌肉應該縮短／拉長」的預期，加上走路時 12 項「這條肌肉在週期哪個時間點最長／最短」，共 125 項
 - `reports/binding.txt`：每條肌肉的附著骨頭和長度路徑
 - `node site/src/test_kin.mjs`：50 個隨機姿勢下，網頁的計算和 Python 的計算完全一致
 - `python3 site/test/check.py`：在手機和桌面尺寸實際操作網頁、截圖（需要 playwright）
@@ -57,7 +58,8 @@ npm install
 - **肌肉附著點不對**：在 `pipeline/bind.py` 的 `OVERRIDES` 加一筆，寫清楚 `why`，再從第 7 步重跑
 - **模型名稱標錯**：`pipeline/names.py` 的 `NAME_FIX`
 - **中文名稱、肌群分類**：`pipeline/names.py`
-- **新增教科書檢查**：`pipeline/verify_muscles.py` 的 `TESTS`
+- **新增教科書檢查**：`pipeline/verify_muscles.py` 的 `TESTS`（靜態動作）和 `GAIT_TESTS`（走路）
+- **走路曲線**：`pipeline/gait.py` 的 `KEYS`（各關節在步態週期各百分比的角度，含出處），改完從第 7 步重跑
 - **動作範例、介面**：`site/src/index.html`（`PRESETS`），改完跑 `python3 site/build.py`
 - **關節計算**：`pipeline/kin.py` 和 `site/src/kin.js` 是同一套算法，兩邊要一起改，`test_kin.mjs` 會檢查
 
@@ -79,6 +81,7 @@ npm install
 - 關節用固定轉軸近似，極端角度時骨頭可能有幾毫米的重疊或間隙；膝蓋屈曲上限 120°
 - 手臂舉很高時，胸大肌和闊背肌這類大片肌肉的網格會被拉成帶狀
 - 長度變化是幾何上的變化，不代表哪條肌肉在出力
+- 走路只有前後方向（矢狀面）的動作，骨盆固定不動；曲線是健康成人的典型值，不是量測資料
 
 ## 原始模型修正紀錄
 
