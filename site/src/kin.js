@@ -140,3 +140,16 @@ export function gaitAngles(gait, phase) {
   for (const [k, v] of Object.entries(gait.samples)) out[k] = v[i] + (v[j] - v[i]) * f;
   return out;
 }
+
+// The left leg is the right leg mirrored in the midline plane x = 0. Its geometry is stored mirrored, so its
+// segment transforms are the right-leg transforms conjugated by the mirror: S·M·S (a proper rotation again).
+export function mirrorX(M) {
+  const out = {};
+  for (const [k, m] of Object.entries(M)) {
+    if (!Array.isArray(m)) { out[k] = m; continue; }
+    const r = m.slice();
+    for (let i = 0; i < 4; i++) { r[i] = -r[i]; r[i * 4] = -r[i * 4]; }   // negate row 0 and column 0 (the corner twice)
+    out[k] = r;
+  }
+  return out;
+}

@@ -14,6 +14,7 @@
 - 每個角度的正負號由 `verify_kinematics.py` 量地標位移決定，不要手動改 `signs`，也不要用截圖判斷方向。
 - 改了關節或綁定，跑完要確認 `reports/muscles.txt` 是 N/N，`node site/src/test_kin.mjs` 差值為 0。
 - 新增動作或部位時，先在 `verify_muscles.py` 的 `TESTS`（走路是 `GAIT_TESTS`）寫下教科書預期，再改程式。
+- 走路的左腳不是另外綁的：它是右腳鏡像（`export.py` 輸出 `region_leg_l.glb`，網頁用 `mirrorX` 也就是 S·M·S 驅動），相差半個週期。改右腳的關節或肌肉，左腳自動跟著改；不要為左腳另做一套。鏡像成立的前提是原始模型左右對稱，`export.py` 有 assert。
 - 走路的角度曲線在 `pipeline/gait.py`，用 PCHIP 內插（不會甩過關鍵點）；不要換回三次樣條，它曾讓踝背屈多衝出 7°。
 
 ## 所有修正都要寫進程式

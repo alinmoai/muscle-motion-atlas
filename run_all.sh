@@ -31,7 +31,7 @@ step "8/9 export + compress";    python3 export.py
 cd "$ROOT"
 mkdir -p site/dist
 $GT simplify $B/raw/overview.glb $B/raw/overview_s.glb --ratio 0.2 --error 0.0015
-for pair in "overview_s:overview" "region_arm:region_arm" "region_leg:region_leg"; do
+for pair in "overview_s:overview" "region_arm:region_arm" "region_leg:region_leg" "region_leg_l:region_leg_l"; do
   src=${pair%%:*}; dst=${pair##*:}
   $GT meshopt  $B/raw/$src.glb site/dist/$dst.glb --level medium        # small, needs WebAssembly to decode
   $GT quantize $B/raw/$src.glb site/dist/$dst.plain.glb                 # larger fallback, no WebAssembly

@@ -112,6 +112,7 @@ h1 .zh-t { font-family: var(--f-body); font-weight: 700; letter-spacing: .02em; 
 .gait-bar span { display: flex; align-items: center; padding: 0 6px; background: var(--surface-2); min-width: 0; white-space: nowrap; }
 .gait-bar span + span { background: transparent; box-shadow: inset 0 0 0 1px var(--surface-2); }
 .gait-note { margin: 0; font-size: 12.5px; color: var(--muted); }
+.gait-sub { font-size: 13px; color: var(--muted); }
 
 .dofs { display: grid; gap: 14px; }
 .dof { display: grid; gap: 2px; }
@@ -185,6 +186,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 26px; ma
         </div>
         <div class="gait" id="gait" hidden>
           <div class="gait-head"><b id="gait-phase">初始著地</b><output id="gait-pct">0%</output></div>
+          <div class="gait-sub" id="gait-phase-l" hidden></div>
           <input type="range" id="gait-scrub" min="0" max="99.5" step="0.5" value="0" aria-label="步態週期位置（%）">
           <div class="gait-bar" aria-hidden="true"><span style="flex: 60">站立期 0–60%</span><span style="flex: 40">擺盪期 60–100%</span></div>
           <p class="gait-note" id="gait-note"></p>
@@ -368,6 +370,19 @@ function gaitAngles(gait, phase) {
   return out;
 }
 
+// The left leg is the right leg mirrored in the midline plane x = 0. Its geometry is stored mirrored, so its
+// segment transforms are the right-leg transforms conjugated by the mirror: S·M·S (a proper rotation again).
+function mirrorX(M) {
+  const out = {};
+  for (const [k, m] of Object.entries(M)) {
+    if (!Array.isArray(m)) { out[k] = m; continue; }
+    const r = m.slice();
+    for (let i = 0; i < 4; i++) { r[i] = -r[i]; r[i * 4] = -r[i * 4]; }   // negate row 0 and column 0 (the corner twice)
+    out[k] = r;
+  }
+  return out;
+}
+
 
 const $ = (s) => document.querySelector(s);
 const SEG_ZH = {
@@ -479,7 +494,8 @@ function flyTo(name) {
 }
 
 // ---------- state ----------
-const state = { region: null, ang: {}, L0: {}, L: {}, strain: {}, selected: null, picked: null, group: 'all', onlyChanged: false, ghost: false, hideMuscles: false, hover: null, play: null, tween: null, gaitPhase: 0 };
+const state = { region: null, ang: {}, L0: {}, L: {}, strain: {}, selected: null, picked: null, group: 'all', onlyChanged: false, ghost: false, hideMuscles: false, hover: null, play: null, tween: null, gaitPhase: 0,
+  left: { on: false, ang: {}, strain: {} } };   // the mirrored left leg, shown only while walking
 let model, overview, R;
 const regionCache = {};
 const loader = new GLTFLoader();
@@ -533,7 +549,7 @@ async function boot() {
   g.scene.traverse((o) => {
     if (o.isMesh && o.userData.part) {
       overview.parts[o.userData.part] = o;
-      o.material = o.userData.part === 'context' ? ctxMat : hotMat[o.userData.part];
+      o.material = hotMat[o.userData.part] ?? ctxMat;     // context and the static left leg share the context look
     }
   });
   scene.add(g.scene);
@@ -564,6 +580,36 @@ async function loadRegion(r) {
   for (const [n, m] of Object.entries(reg.muscles)) if (measurable(m.meta)) reg.L0[n] = muscleLength(m.meta, M, {});
   regionCache[r] = reg;
   return reg;
+}
+
+// The left leg: the right leg mirrored in x = 0 (exact, the source model is symmetric), loaded on first walk.
+let LEFT = null, leftLoading = null;
+function loadLeft() {
+  if (LEFT) return Promise.resolve(LEFT);
+  if (!leftLoading) leftLoading = loadGLB(model.regions.leg.left.file).then((g) => {
+    const L = { root: g.scene, segs: {}, muscles: {} };
+    g.scene.traverse((o) => {
+      if (o.userData.seg) { L.segs[o.userData.seg] = o; o.matrixAutoUpdate = false; }
+      if (o.isMesh && o.userData.bone) o.material = boneMat;
+      if (o.isMesh && o.userData.muscle) {
+        const mat = new THREE.MeshStandardMaterial({ roughness: 0.55, metalness: 0 });
+        o.material = mat; o.frustumCulled = false;
+        L.muscles[o.userData.muscle] = { mesh: o, mat, meta: model.regions.leg.muscles[o.userData.muscle] };
+      }
+    });
+    g.scene.visible = false;
+    scene.add(g.scene);
+    LEFT = L;
+    return L;
+  });
+  return leftLoading;
+}
+function setLeft(on) {
+  on = on && state.region === 'leg' && !!LEFT;
+  state.left.on = on;
+  if (LEFT) LEFT.root.visible = on;
+  if (overview) overview.parts.leg_l.visible = !on;
+  $('#gait-phase-l').hidden = !on;
 }
 
 // ---------- region view ----------
@@ -601,6 +647,7 @@ async function enterRegion(r) {
 
 function leaveRegion() {
   stopPlay();
+  setLeft(false);
   follow.on = false; follow.lock = false;
   state.region = null; R = null; state.selected = null; state.picked = null;
   for (const k of Object.keys(regionCache)) regionCache[k].root.visible = false;
@@ -629,6 +676,16 @@ function updatePose() {
     const L = muscleLength(R.muscles[n].meta, M, state.ang);
     state.L[n] = L; state.strain[n] = L / R.L0[n] - 1;
   }
+  if (state.left.on) {
+    // lengths do not change under a mirror, so the right-leg FK at the left leg's angles gives its lengths
+    const Ml = fk(model.rig, 'leg', state.left.ang), Mm = mirrorX(Ml);
+    for (const [seg, node] of Object.entries(LEFT.segs)) {
+      const a = Mm[seg];
+      node.matrix.set(a[0], a[1], a[2], a[3], a[4], a[5], a[6], a[7], a[8], a[9], a[10], a[11], a[12], a[13], a[14], a[15]);
+      node.matrixWorldNeedsUpdate = true;
+    }
+    for (const n of Object.keys(R.L0)) state.left.strain[n] = muscleLength(R.muscles[n].meta, Ml, state.left.ang) / R.L0[n] - 1;
+  }
   if (!follow.lock) updateFollow(M);
   paintMuscles();
   scheduleUI();
@@ -636,26 +693,30 @@ function updatePose() {
 }
 
 const tmp = new THREE.Color();
-function muscleColor(n, out) {
+function muscleColor(n, out, strain = state.strain) {
   const m = R.muscles[n].meta;
   if (m.kind === 'tendon') out.copy(C.tendon);
   else {
     out.copy(C.muscle);
-    const s = state.strain[n] ?? 0;
+    const s = strain[n] ?? 0;
     if (Math.abs(s) > 0.005) out.lerp(s < 0 ? C.short : C.long, Math.pow(Math.min(1, Math.abs(s) / 0.2), 0.75));
   }
   return out;
 }
-function isVisible(n) {
+function isVisible(n, strain = state.strain) {
   if (state.hideMuscles) return false;
   const m = R.muscles[n].meta;
   if (state.group !== 'all' && m.group !== state.group) return false;
-  if (state.onlyChanged && !(Math.abs(state.strain[n] ?? 0) > 0.01) && state.selected !== n) return false;
+  if (state.onlyChanged && !(Math.abs(strain[n] ?? 0) > 0.01) && state.selected !== n) return false;
   return true;
 }
 function paintMuscles() {
-  for (const [n, m] of Object.entries(R.muscles)) {
-    muscleColor(n, m.mat.color);
+  paintSet(R.muscles, state.strain);
+  if (state.left.on) paintSet(LEFT.muscles, state.left.strain);
+}
+function paintSet(muscles, strain) {
+  for (const [n, m] of Object.entries(muscles)) {
+    muscleColor(n, m.mat.color, strain);
     m.mat.emissive.setRGB(0, 0, 0);
     const other = state.selected && state.selected !== n;
     if (state.selected === n) m.mat.emissive.copy(m.mat.color).multiplyScalar(0.25);
@@ -663,7 +724,7 @@ function paintMuscles() {
     const ghost = state.ghost || other;
     m.mat.transparent = ghost; m.mat.opacity = other ? 0.14 : ghost ? 0.28 : 1; m.mat.depthWrite = !ghost;
     m.mesh.renderOrder = state.selected === n ? 1 : 0;
-    m.mesh.visible = isVisible(n);
+    m.mesh.visible = isVisible(n, strain);
   }
 }
 
@@ -688,7 +749,8 @@ function renderUI() {
   const lo = items.filter(([, s]) => s > 0).sort((a, b) => b[1] - a[1]).slice(0, 3);
   const col = (title, cls, arr) => arr.length ? `<div class="lg-col"><div class="lg-head"><i style="background:var(--${cls === 's' ? 'short' : 'long'})"></i>${title}</div>${arr.map(([n, s]) =>
     `<button class="lg-row" data-m="${esc(n)}"><span>${esc(R.muscles[n].meta.zh)}</span><span class="delta ${cls} num">${fmtPct(s)}</span></button>`).join('')}</div>` : '';
-  $('#ledger').innerHTML = col('縮短最多', 's', sh) + col('拉長最多', 'l', lo);
+  const side = state.left.on ? '右腳 ' : '';
+  $('#ledger').innerHTML = col(side + '縮短最多', 's', sh) + col(side + '拉長最多', 'l', lo);
   $('#ledger').hidden = !(sh.length || lo.length);
   // full list
   if (!$('#pane-muscles').hidden) renderList();
@@ -785,7 +847,7 @@ function aboutHTML(r) {
     <div><h3>變短不一定是在出力</h3><p>這裡顯示的是幾何上的長度變化。實際是誰在出力，還要看動作方向和重力。例如手臂慢慢放下時，三角肌在變長，但它正在出力控制下降速度（離心收縮）。</p></div>
     <div><h3>長度怎麼量</h3><p>沿著肌肉的附著點連線量，遇到肌腱繞過關節的地方會加一個滑車點（例如內外踝後方、膝蓋後方、腕部），所以量到的是肌肉加肌腱的路徑長，不是變形後的網格長度。肱二頭肌的肌腱在旋前時會繞著橈骨捲，這部分另外加上。</p></div>
     <div><h3>簡化之處</h3><p>${sim} 骨頭的形狀和肌肉位置來自模型，但動作是用固定的關節軸近似，極端角度時骨頭可能有幾毫米的重疊或間隙。</p></div>
-    ${r === 'leg' ? `<div><h3>走路</h3><p>走路的關節角度是健康成人正常速度的典型曲線：依步態講義的各期數值（腳跟著地時髖屈曲 30°、膝 5°；擺盪初期末膝屈曲約 60°；站立末期踝背屈、離地前蹠屈約 20°），用不會過衝的方式平滑連接。只做前後方向的動作，骨盆固定，所以看起來像懸空擺腿。</p><p>走路特別要記得長度不等於出力：腳跟著地後，脛前肌正在出力讓腳掌慢慢放下，但它同時被拉長，所以是藍色；站立中期的比目魚肌也是一邊出力、一邊被拉長。</p></div>` : ''}
+    ${r === 'leg' ? `<div><h3>走路</h3><p>走路的關節角度是健康成人正常速度的典型曲線：依步態講義的各期數值（腳跟著地時髖屈曲 30°、膝 5°；擺盪初期末膝屈曲約 60°；站立末期踝背屈、離地前蹠屈約 20°），用不會過衝的方式平滑連接。只做前後方向的動作，骨盆固定，所以看起來像懸空擺腿。</p><p>走路時兩腳都會動：左腳是右腳的鏡像，相差半個週期（右腳跟著地時，左腳正要離地）。原始模型左右完全對稱，所以鏡像出來的就是模型本身的左腳。名稱卡、肌肉清單和右上角的排行都是右腳的數值。</p><p>走路特別要記得長度不等於出力：腳跟著地後，脛前肌正在出力讓腳掌慢慢放下，但它同時被拉長，所以是藍色；站立中期的比目魚肌也是一邊出力、一邊被拉長。</p></div>` : ''}
     <div><h3>怎麼驗證過</h3><p>每個關節動作都對照了教科書的主動肌與拮抗肌，例如屈肘 90° 時，肱肌縮短 25%、肱三頭肌內側頭拉長 19%。走路則檢查每條主要肌肉在週期的哪個時間點最長，例如膕旁肌在擺盪末期、髂腰肌在站立末期。兩個部位共 125 項預期全部符合。骨頭的轉動方向也是用量測確認，不是看圖判斷。</p></div>
     <div><h3>原模型的錯誤</h3><p>原模型把斜方肌上束和下束的名稱標反了（標「上行部」的那塊其實在脖子上），這裡依位置改正。另外有些肌肉的附著點沒有標，或者標在它只是貼著、並沒有附著的骨頭上，例如股直肌被標到股骨上，這些都依解剖學調整過。</p></div>
     <div><p class="muted">模型：<a href="https://github.com/LluisV/Z-Anatomy" target="_blank" rel="noopener">Z-Anatomy</a>（衍生自 BodyParts3D），授權 CC BY-SA 4.0。只有右側肢體可以動。</p></div>`;
@@ -802,7 +864,8 @@ function markPreset(i) {
   document.querySelectorAll('#presets .chip').forEach((b) => b.setAttribute('aria-pressed', String(Number(b.dataset.p) === i)));
   const g = isGait(i);
   $('#gait').hidden = !g;
-  if (!g) follow.lock = false;
+  if (!state.play) $('#play').textContent = g ? '播放' : '來回播放';
+  if (!g) { follow.lock = false; if (state.left.on) { setLeft(false); scheduleUI(); } }
 }
 
 // ---------- motion ----------
@@ -813,9 +876,10 @@ function tweenTo(target, dur = 900, onDone) {
   if (reduceMotion) { state.ang = to; updatePose(); onDone && onDone(); return; }
   state.tween = { t0: performance.now(), dur, from, to, onDone };
 }
+const playLabel = () => (isGait(state.lastPreset) ? '播放' : '來回播放');   // walking loops, presets go back and forth
 function stopPlay() {
   state.play = null;
-  $('#play').setAttribute('aria-pressed', 'false'); $('#play').textContent = '來回播放';
+  $('#play').setAttribute('aria-pressed', 'false'); $('#play').textContent = playLabel();
 }
 const atPose = (target) => Object.keys(state.ang).every((k) => Math.abs((target[k] ?? 0) - state.ang[k]) < 0.5);
 // ---- walking: loop through the gait cycle (model.regions.leg.gait) ----
@@ -827,33 +891,52 @@ function gaitPose(phase) {
 function setGaitPhase(phase) {
   state.gaitPhase = ((phase % 1) + 1) % 1;
   state.ang = gaitPose(state.gaitPhase);
+  state.left.ang = gaitPose(state.gaitPhase + model.regions.leg.left.phase_offset);
   updatePose();
   renderGait();
 }
-function renderGait() {
-  const g = model.regions.leg.gait, pct = state.gaitPhase * 100;
+function phaseAt(pct) {
+  const g = model.regions.leg.gait;
   const ph = g.phases.find((p) => pct >= p.start && pct < p.end) ?? g.phases[g.phases.length - 1];
-  $('#gait-phase').textContent = `${ph.zh}（${pct < g.stance_pct ? '站立期' : '擺盪期'}）`;
+  return `${ph.zh}（${pct < g.stance_pct ? '站立期' : '擺盪期'}）`;
+}
+function renderGait() {
+  const pct = state.gaitPhase * 100;
+  const pctL = ((state.gaitPhase + model.regions.leg.left.phase_offset) % 1) * 100;
+  $('#gait-phase').textContent = (state.left.on ? '右腳：' : '') + phaseAt(pct);
+  $('#gait-phase-l').textContent = `左腳：${phaseAt(pctL)}，${Math.floor(pctL)}%`;
   $('#gait-pct').textContent = `${Math.floor(pct)}%`;
   $('#gait-scrub').value = pct.toFixed(1);
 }
 // frame every pose of the cycle once, seen from the side, and hold the camera there while walking
 function frameGait() {
-  const g = model.regions.leg.gait, pts = [];
+  const g = model.regions.leg.gait, pts = [], off = model.regions.leg.left.phase_offset;
   for (let i = 0; i < g.n; i += 5) {
-    const M = fk(model.rig, 'leg', gaitPose(i / g.n));
-    for (const l of model.regions.leg.landmarks) pts.push(apply(M[l.seg], l.p));
+    const M = fk(model.rig, 'leg', gaitPose(i / g.n)), Ml = mirrorX(fk(model.rig, 'leg', gaitPose(i / g.n + off)));
+    for (const l of model.regions.leg.landmarks) {
+      pts.push(apply(M[l.seg], l.p));
+      pts.push(apply(Ml[l.seg], [-l.p[0], l.p[1], l.p[2]]));
+    }
   }
   const lo = [0, 1, 2].map((k) => Math.min(...pts.map((p) => p[k]))), hi = [0, 1, 2].map((k) => Math.max(...pts.map((p) => p[k])));
   const c = lo.map((v, k) => (v + hi[k]) / 2);
   const r = Math.max(...pts.map((p) => Math.hypot(p[0] - c[0], p[1] - c[1], p[2] - c[2]))) + 0.1;
   follow.target.set(c[0], c[1], c[2]); follow.dist = fitDist(r); follow.zoom = 1; follow.on = true; follow.lock = true;
-  VIEWS.gait = { c, r, d: [-1, -0.12, 0.1] };
+  VIEWS.gait = { c, r, d: [-1, -0.6, 0.15] };   // front-right, so the left leg is not hidden behind the right
   flyTo('gait');
 }
 function startGait(fromPhase, fly) {
   const idx = PRESETS[state.region].findIndex((p) => p[1] === 'gait');
   state.lastPreset = idx; markPreset(idx);
+  if (!state.left.on) {
+    if (!LEFT) { $('#loading').textContent = '載入左腳…'; $('#loading').hidden = false; }
+    loadLeft().then(() => {
+      $('#loading').hidden = true;
+      if (state.region !== 'leg' || !isGait(state.lastPreset)) return;
+      state.left.ang = gaitPose(state.gaitPhase + model.regions.leg.left.phase_offset);
+      setLeft(true); updatePose(); renderGait();
+    }).catch((err) => { console.error(err); $('#loading').textContent = '左腳載入失敗，先只顯示右腳。'; });
+  }
   if (fly) frameGait(); else follow.lock = true;
   const run = { gait: true, ready: false, phase0: fromPhase };
   state.play = run;
@@ -929,7 +1012,7 @@ function pick(e) {
   scene.updateMatrixWorld();
   ray.setFromCamera(ndc, camera);
   const targets = [];
-  if (!state.region) { targets.push(overview.parts.arm, overview.parts.leg); if (e.type !== 'pointermove') targets.push(overview.parts.context); }
+  if (!state.region) { targets.push(overview.parts.arm, overview.parts.leg); if (e.type !== 'pointermove') targets.push(overview.parts.context, overview.parts.leg_l); }
   else {
     for (const m of Object.values(R.muscles)) if (m.mesh.visible && !state.ghost) { m.mesh.boundingSphere = null; m.mesh.boundingBox = null; targets.push(m.mesh); }
     targets.push(...Object.values(R.bones));

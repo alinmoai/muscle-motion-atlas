@@ -12,7 +12,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
 DIST = os.path.join(HERE, 'dist')
 ART = os.path.join(ROOT, 'build', 'artifact')
-MODELS = ['overview', 'region_arm', 'region_leg']
+MODELS = ['overview', 'region_arm', 'region_leg', 'region_leg_l']
 os.makedirs(DIST, exist_ok=True)
 os.makedirs(ART, exist_ok=True)
 
@@ -41,7 +41,7 @@ for m in MODELS:
         open(os.path.join(ART, f'{m}{suffix}.b64.txt'), 'w').write(base64.b64encode(data).decode())
 
 # local test pages: local three.js and a debug hook for the screenshot scripts
-dbg = ('window.__dbg = { camera, controls, state, scene, viewFor, enterRegion, pick, R: () => R, '
+dbg = ('window.__dbg = { camera, controls, state, scene, viewFor, enterRegion, pick, R: () => R, gaitPose, LEFT: () => LEFT, overview: () => overview, updatePose, '
        'setAng: (a) => { Object.assign(state.ang, a); updatePose(); }, '
        'setView: (p, t) => { camTween = null; camera.position.set(...p); controls.target.set(...t); controls.update(); requestRender(); } };\n')
 test = art_page.replace('https://cdn.jsdelivr.net/npm/three@0.169.0/', '/three/').replace('boot().catch(', dbg + 'boot().catch(')
