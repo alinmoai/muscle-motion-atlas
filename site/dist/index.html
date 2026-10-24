@@ -14,9 +14,12 @@
   --line: #c5cfca;
   --accent: #1c5d55;
   --accent-ink: #f3f8f6;
-  --short: #cc3f27;
-  --long: #2a68b0;
-  --muscle: #b07468;
+  /* length change is a diverging scale: red (shorter) <- neutral gray (unchanged) -> blue (longer) */
+  --short: #e34948;
+  --long: #2a78d6;
+  --muscle: #a9a49e;
+  --short-ink: #b8322f;   /* the same hues darkened for text, which needs 4.5:1 on the panel */
+  --long-ink: #1f5fae;
   --tendon: #d6cdb9;
   --bone: #ece3cd;
   --stage: #dae2de;
@@ -28,13 +31,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #0f1412; --surface: #161c1a; --surface-2: #1f2724; --ink: #e2eae6; --muted: #91a099; --line: #2b3531;
-    --accent: #63b5a9; --accent-ink: #0c1311; --short: #ff6c4f; --long: #5d9fff; --muscle: #9b6559; --tendon: #b4ab98;
+    --accent: #63b5a9; --accent-ink: #0c1311; --short: #e66767; --long: #3987e5; --muscle: #8f8a84; --short-ink: #ff8a7d; --long-ink: #7db3ff; --tendon: #b4ab98;
     --bone: #d7cdb6; --stage: #131917; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #0f1412; --surface: #161c1a; --surface-2: #1f2724; --ink: #e2eae6; --muted: #91a099; --line: #2b3531;
-  --accent: #63b5a9; --accent-ink: #0c1311; --short: #ff6c4f; --long: #5d9fff; --muscle: #9b6559; --tendon: #b4ab98;
+  --accent: #63b5a9; --accent-ink: #0c1311; --short: #e66767; --long: #3987e5; --muscle: #8f8a84; --short-ink: #ff8a7d; --long-ink: #7db3ff; --tendon: #b4ab98;
   --bone: #d7cdb6; --stage: #131917; color-scheme: dark;
 }
 html, body { height: 100%; }
@@ -73,7 +76,7 @@ button { cursor: pointer; }
 .card .meta { font-size: 13px; color: var(--muted); }
 .card .x { border: 0; background: none; font-size: 20px; line-height: 1; padding: 0 2px; color: var(--muted); }
 .delta { font-family: var(--f-mono); font-variant-numeric: tabular-nums; font-weight: 500; }
-.delta.s { color: var(--short); } .delta.l { color: var(--long); }
+.delta.s { color: var(--short-ink); } .delta.l { color: var(--long-ink); }
 
 /* ---------- panel ---------- */
 #panel { background: var(--surface); border-top: 1px solid var(--line); overflow-y: auto; min-height: 0; }
@@ -153,7 +156,7 @@ input[type="range"] { width: 100%; accent-color: var(--accent); height: 26px; ma
     <div id="ledger" class="overlay" hidden></div>
     <div id="legend" class="overlay" hidden>
       <div class="bar"></div>
-      <div class="ticks"><span>縮短 −20%</span><span>0</span><span>+20% 拉長</span></div>
+      <div class="ticks"><span>縮短 −15%</span><span>不變</span><span>+15% 拉長</span></div>
     </div>
     <div id="pick" class="overlay" hidden></div>
   </div>
@@ -699,7 +702,8 @@ function muscleColor(n, out, strain = state.strain) {
   else {
     out.copy(C.muscle);
     const s = strain[n] ?? 0;
-    if (Math.abs(s) > 0.005) out.lerp(s < 0 ? C.short : C.long, Math.pow(Math.min(1, Math.abs(s) / 0.2), 0.75));
+    // full colour at ±15 %; the square root lifts small changes (walking is mostly 2-9 %) so they still read
+    if (Math.abs(s) > 0.005) out.lerp(s < 0 ? C.short : C.long, Math.sqrt(Math.min(1, Math.abs(s) / 0.15)));
   }
   return out;
 }
@@ -843,7 +847,7 @@ function aboutHTML(r) {
     ? '肩胛骨和鎖骨不能單獨控制：手臂每抬高 3 度，肩胛骨跟著上轉約 1 度（教科書的 2:1 肩肱節律）。手腕屈伸由兩排腕骨各分擔一半。手指固定不動。'
     : '膝蓋屈曲時，脛骨會依查表做幾毫米的前後滑動，讓關節面保持貼合；髕骨沿股骨滑動。內翻／外翻用一條斜的距下關節軸代表。腳趾五根一起動。';
   return `
-    <div><h3>顏色怎麼看</h3><p><span class="sw-inline" style="background:var(--short)"></span> 紅色：這條肌肉兩端的附著點正在靠近，也就是變短。<span class="sw-inline" style="background:var(--long)"></span> 藍色：正在拉開，被拉長。顏色越深變化越大，約 ±20% 時為滿色。原本的褐色表示這個動作沒有改變它的長度。</p></div>
+    <div><h3>顏色怎麼看</h3><p><span class="sw-inline" style="background:var(--short)"></span> 紅色：這條肌肉兩端的附著點正在靠近，也就是變短。<span class="sw-inline" style="background:var(--long)"></span> 藍色：正在拉開，被拉長。灰色表示長度沒有改變。顏色越飽和變化越大，約 ±15% 時為滿色；小到幾個百分點的變化也會明顯偏紅或偏藍。</p></div>
     <div><h3>變短不一定是在出力</h3><p>這裡顯示的是幾何上的長度變化。實際是誰在出力，還要看動作方向和重力。例如手臂慢慢放下時，三角肌在變長，但它正在出力控制下降速度（離心收縮）。</p></div>
     <div><h3>長度怎麼量</h3><p>沿著肌肉的附著點連線量，遇到肌腱繞過關節的地方會加一個滑車點（例如內外踝後方、膝蓋後方、腕部），所以量到的是肌肉加肌腱的路徑長，不是變形後的網格長度。肱二頭肌的肌腱在旋前時會繞著橈骨捲，這部分另外加上。</p></div>
     <div><h3>簡化之處</h3><p>${sim} 骨頭的形狀和肌肉位置來自模型，但動作是用固定的關節軸近似，極端角度時骨頭可能有幾毫米的重疊或間隙。</p></div>
